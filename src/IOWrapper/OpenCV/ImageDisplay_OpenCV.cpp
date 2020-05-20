@@ -32,7 +32,7 @@
 
 //#include <std/thread.hpp>
 #include <thread>
-
+#include <mutex>
 #include "util/settings.h"
 
 namespace dso
