@@ -42,6 +42,8 @@
 
 #include <algorithm>
 
+using namespace std::placeholders;
+
 namespace dso
 {
 
@@ -151,7 +153,7 @@ Vec3 FullSystem::linearizeAll(bool fixLinearization)
 
 	if(multiThreading)
 	{
-		treadReduce.reduce(boost::bind(&FullSystem::linearizeAll_Reductor, this, fixLinearization, toRemove, _1, _2, _3, _4), 0, activeResiduals.size(), 0);
+		treadReduce.reduce(std::bind(&FullSystem::linearizeAll_Reductor, this, fixLinearization, toRemove, _1, _2, _3, _4), 0, activeResiduals.size(), 0);
 		lastEnergyP = treadReduce.stats[0];
 	}
 	else
@@ -451,7 +453,7 @@ float FullSystem::optimize(int mnumOptIts)
 
 
 	if(multiThreading)
-		treadReduce.reduce(boost::bind(&FullSystem::applyRes_Reductor, this, true, _1, _2, _3, _4), 0, activeResiduals.size(), 50);
+		treadReduce.reduce(std::bind(&FullSystem::applyRes_Reductor, this, true, _1, _2, _3, _4), 0, activeResiduals.size(), 50);
 	else
 		applyRes_Reductor(true,0,activeResiduals.size(),0,0);
 
@@ -522,7 +524,7 @@ float FullSystem::optimize(int mnumOptIts)
 		{
 
 			if(multiThreading)
-				treadReduce.reduce(boost::bind(&FullSystem::applyRes_Reductor, this, true, _1, _2, _3, _4), 0, activeResiduals.size(), 50);
+				treadReduce.reduce(std::bind(&FullSystem::applyRes_Reductor, this, true, _1, _2, _3, _4), 0, activeResiduals.size(), 50);
 			else
 				applyRes_Reductor(true,0,activeResiduals.size(),0,0);
 
@@ -584,7 +586,7 @@ float FullSystem::optimize(int mnumOptIts)
 	}
 
 	{
-		boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+		std::unique_lock<std::mutex> crlock(shellPoseMutex);
 		for(FrameHessian* fh : frameHessians)
 		{
 			fh->shell->camToWorld = fh->PRE_camToWorld;

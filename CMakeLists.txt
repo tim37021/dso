@@ -15,7 +15,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # required libraries
 find_package(SuiteParse REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS system thread) 
+#find_package(Boost COMPONENTS system thread) 
 
 # optional libraries
 find_package(LibZip QUIET)
@@ -25,7 +25,7 @@ find_package(OpenCV QUIET)
 # flags
 add_definitions("-DENABLE_SSE")
 set(CMAKE_CXX_FLAGS
-   "${SSE_FLAGS} -O3 -g -std=c++0x -march=native"
+   "${SSE_FLAGS} -flto -O3 -g -std=c++0x -march=native"
 #   "${SSE_FLAGS} -O3 -g -std=c++0x -fno-omit-frame-pointer"
 )
 
@@ -63,7 +63,6 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
   ${EIGEN3_INCLUDE_DIR}
 ) 
-
 
 # decide if we have pangolin
 if (Pangolin_FOUND)
@@ -114,18 +113,20 @@ add_library(dso STATIC ${dso_SOURCE_FILES})
 
 #set_property( TARGET dso APPEND_STRING PROPERTY COMPILE_FLAGS -Wall )
 
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin") # OSX
+if (Boost_FOUND)
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin") # OSX
     set(BOOST_THREAD_LIBRARY boost_thread-mt)
-else()
+  else()
     set(BOOST_THREAD_LIBRARY boost_thread)
+  endif()
+  set(BOOST_RELATED_LIBRARY boost_system ${BOOST_THREAD_LIBRARY})
 endif()
 
 # build main executable (only if we have both OpenCV and Pangolin)
 if (OpenCV_FOUND AND Pangolin_FOUND)
 	message("--- compiling dso_dataset.")
 	add_executable(dso_dataset ${PROJECT_SOURCE_DIR}/src/main_dso_pangolin.cpp  ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES})
-    target_link_libraries(dso_dataset dso boost_system cxsparse ${BOOST_THREAD_LIBRARY} ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS})
+    target_link_libraries(dso_dataset dso cxsparse ${BOOST_RELATED_LIBRARY} ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS})
 else()
 	message("--- not building dso_dataset, since either don't have openCV or Pangolin.")
 endif()

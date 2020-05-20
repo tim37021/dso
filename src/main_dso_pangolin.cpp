@@ -34,7 +34,7 @@
 #include "IOWrapper/ImageDisplay.h"
 
 
-#include <boost/thread.hpp>
+//#include <boost/thread.hpp>
 #include "util/settings.h"
 #include "util/globalFuncs.h"
 #include "util/DatasetReader.h"
@@ -50,6 +50,8 @@
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 #include "IOWrapper/OutputWrapper/SampleOutputWrapper.h"
 
+
+using namespace std::placeholders;
 
 std::string vignette = "";
 std::string gammaCalib = "";
@@ -358,7 +360,7 @@ int main( int argc, char** argv )
 		parseArgument(argv[i]);
 
 	// hook crtl+C.
-	boost::thread exThread = boost::thread(exitThread);
+	std::thread exThread = std::thread(exitThread);
 
 
 	ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette);

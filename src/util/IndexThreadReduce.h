@@ -25,10 +25,12 @@
 
 #pragma once
 #include "util/settings.h"
-#include "boost/thread.hpp"
+//#include "boost/thread.hpp"
 #include <stdio.h>
 #include <iostream>
-
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 
 namespace dso
@@ -43,17 +45,18 @@ public:
 
 	inline IndexThreadReduce()
 	{
+    using namespace std::placeholders;
 		nextIndex = 0;
 		maxIndex = 0;
 		stepSize = 1;
-		callPerIndex = boost::bind(&IndexThreadReduce::callPerIndexDefault, this, _1, _2, _3, _4);
+		callPerIndex = std::bind(&IndexThreadReduce::callPerIndexDefault, this, _1, _2, _3, _4);
 
 		running = true;
 		for(int i=0;i<NUM_THREADS;i++)
 		{
 			isDone[i] = false;
 			gotOne[i] = true;
-			workerThreads[i] = boost::thread(&IndexThreadReduce::workerLoop, this, i);
+			workerThreads[i] = std::thread(&IndexThreadReduce::workerLoop, this, i);
 		}
 
 	}
@@ -73,9 +76,10 @@ public:
 
 	}
 
-	inline void reduce(boost::function<void(int,int,Running*,int)> callPerIndex, int first, int end, int stepSize = 0)
+	inline void reduce(std::function<void(int,int,Running*,int)> callPerIndex, int first, int end, int stepSize = 0)
 	{
 
+    using namespace std::placeholders;
 		memset(&stats, 0, sizeof(Running));
 
 //		if(!multiThreading)
@@ -92,7 +96,7 @@ public:
 
 		//printf("reduce called\n");
 
-		boost::unique_lock<boost::mutex> lock(exMutex);
+		std::unique_lock<std::mutex> lock(exMutex);
 
 		// save
 		this->callPerIndex = callPerIndex;
@@ -131,7 +135,7 @@ public:
 
 		nextIndex = 0;
 		maxIndex = 0;
-		this->callPerIndex = boost::bind(&IndexThreadReduce::callPerIndexDefault, this, _1, _2, _3, _4);
+		this->callPerIndex = std::bind(&IndexThreadReduce::callPerIndexDefault, this, _1, _2, _3, _4);
 
 		//printf("reduce done (all threads finished)\n");
 	}
@@ -139,13 +143,13 @@ public:
 	Running stats;
 
 private:
-	boost::thread workerThreads[NUM_THREADS];
+	std::thread workerThreads[NUM_THREADS];
 	bool isDone[NUM_THREADS];
 	bool gotOne[NUM_THREADS];
 
-	boost::mutex exMutex;
-	boost::condition_variable todo_signal;
-	boost::condition_variable done_signal;
+	std::mutex exMutex;
+	std::condition_variable todo_signal;
+	std::condition_variable done_signal;
 
 	int nextIndex;
 	int maxIndex;
@@ -153,7 +157,7 @@ private:
 
 	bool running;
 
-	boost::function<void(int,int,Running*,int)> callPerIndex;
+	std::function<void(int,int,Running*,int)> callPerIndex;
 
 	void callPerIndexDefault(int i, int j,Running* k, int tid)
 	{
@@ -163,7 +167,7 @@ private:
 
 	void workerLoop(int idx)
 	{
-		boost::unique_lock<boost::mutex> lock(exMutex);
+		std::unique_lock<std::mutex> lock(exMutex);
 
 		while(running)
 		{

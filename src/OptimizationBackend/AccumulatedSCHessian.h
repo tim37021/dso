@@ -92,6 +92,7 @@ public:
 
 	void stitchDoubleMT(IndexThreadReduce<Vec10>* red, MatXX &H, VecX &b, EnergyFunctional const * const EF, bool MT)
 	{
+    using namespace std::placeholders;
 		// sum up, splitting by bock in square.
 		if(MT)
 		{
@@ -104,7 +105,7 @@ public:
 				bs[i] = VecX::Zero(nframes[0]*8+CPARS);
 			}
 
-			red->reduce(boost::bind(&AccumulatedSCHessianSSE::stitchDoubleInternal,
+			red->reduce(std::bind(&AccumulatedSCHessianSSE::stitchDoubleInternal,
 				this,Hs, bs, EF,  _1, _2, _3, _4), 0, nframes[0]*nframes[0], 0);
 
 			// sum up results
