@@ -8,3 +8,10 @@ build-*
 *.a
 *.so.*
 thirdparty/libzip-1.1.1
+.clangd
+compile_commands.json
+.vscode
+dist
+logs
+*.bak
+*.egg-info
