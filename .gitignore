@@ -15,3 +15,5 @@ dist
 logs
 *.bak
 *.egg-info
+*.pyc
+*.png
