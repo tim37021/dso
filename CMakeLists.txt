@@ -3,10 +3,12 @@ SET(PROJECT_NAME DSO)
 PROJECT(${PROJECT_NAME})
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 #set(CMAKE_VERBOSE_MAKEFILE ON)
+find_package(Python 3.6 COMPONENTS Development REQUIRED)
+add_subdirectory(pybind11)
 
-
-set(BUILD_TYPE Release)
-#set(BUILD_TYPE RelWithDebInfo)
+#set(BUILD_TYPE Release)
+#set(CMAKE_BUILD_TYPE RelWithDebInfo)
+#set(CMAKE_BUILD_TYPE Debug)
 
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
@@ -30,7 +32,7 @@ find_package(OpenCV QUIET)
 # flags
 add_definitions("-DENABLE_SSE")
 set(CMAKE_CXX_FLAGS
-   "${SSE_FLAGS} -O3 -g -std=c++0x -march=native"
+   "${SSE_FLAGS} -fPIC -g -std=c++0x -march=native"
 #   "${SSE_FLAGS} -O3 -g -std=c++0x -fno-omit-frame-pointer"
 )
 
@@ -77,6 +79,7 @@ if (Pangolin_FOUND)
 	  ${PROJECT_SOURCE_DIR}/src/IOWrapper/Pangolin/KeyFrameDisplay.cpp
 	  ${PROJECT_SOURCE_DIR}/src/IOWrapper/Pangolin/PangolinDSOViewer.cpp)
 	set(HAS_PANGOLIN 1)
+  add_definitions(-DHAS_PANGOLIN)
 else ()
 	message("--- could not find PANGOLIN, not compiling dso_pangolin library.")
 	message("    this means there will be no 3D display / GUI available for dso_dataset.")
@@ -135,4 +138,13 @@ if (OpenCV_FOUND AND Pangolin_FOUND)
 else()
 	message("--- not building dso_dataset, since either don't have openCV or Pangolin.")
 endif()
+
+project(dso_python)
+file(GLOB SOURCES python/*.cpp)
+add_library(dso_python MODULE ${SOURCES} src/IOWrapper/ImageDisplay_dummy.cpp src/IOWrapper/ImageRW_dummy.cpp ${dso_pangolin_SOURCE_FILES})
+target_link_libraries(dso_python PRIVATE dso cxsparse)
+target_link_libraries(dso_python PRIVATE pybind11::module)
+target_link_libraries(dso_python PRIVATE ${Pangolin_LIBRARIES})
+set_target_properties(dso_python PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
+  SUFFIX "${PYTHON_MODULE_EXTENSION}")
 
