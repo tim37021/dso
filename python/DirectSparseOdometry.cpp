@@ -9,6 +9,8 @@
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 #endif
 
+#include "OutputCapture.h"
+
 namespace py = pybind11;
 
 DirectSparseOdometry::DirectSparseOdometry(bool gui)
@@ -27,6 +29,8 @@ DirectSparseOdometry::DirectSparseOdometry(bool gui)
 #endif
 
   }
+  m_capture = new OutputCapture();
+  m_fullSystem->outputWrapper.push_back(m_capture);
 }
 
 DirectSparseOdometry::~DirectSparseOdometry() {
@@ -53,7 +57,6 @@ void DirectSparseOdometry::addActiveFrame(py::array frame, int idx) {
   if(frame_type.is(py::dtype::of<float>())) {
     dso::ImageAndExposure *image = new dso::ImageAndExposure(w, h);
     // Assume we don't have image infomation
-    fprintf(stderr, "dim = %d %d", w, h);
     image->exposure_time = 1.f;
     image->timestamp = 0.0;
     image->image = new float[w * h];
@@ -119,4 +122,9 @@ void DirectSparseOdometry::run() const {
 #ifdef HAS_PANGOLIN
     m_viewer->run();
 #endif
+}
+
+py::array DirectSparseOdometry::trajectories() const {
+  return m_capture->trajectories();
+
 }

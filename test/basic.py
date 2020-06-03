@@ -120,11 +120,60 @@ def dso_builtin_distorter(gui=True):
                 break
 
         dso.waitForMapping()
+        
+        print(dso.trajectories)
 
     gui = threading.Thread(target=func, args=(dso,))
     gui.start()
 
     dso.run()
+    gui.join()
+
+def dso_builtin_distorter2():
+    import dso_python
+    from dso_python import DirectSparseOdometry, Undistort
+    import cv2
+    import threading
+    import matplotlib.pyplot as plt
+    distorter = Undistort.getUndistorterForFile("%s/camera.txt"%(DATASET_PATH), "", "")
+    K = distorter.K
+    dso_python.setCalibration(K, distorter.width, distorter.height)
+    dso = DirectSparseOdometry(False)
+
+    def func(obj):
+        import sys
+        import os.path
+        
+        fig = plt.figure()
+        for i in range(1000):
+            file_name = "%s/images/%04d.jpg"%(DATASET_PATH, i)
+            if not os.path.isfile(file_name):
+                break
+            img = cv2.imread(file_name, cv2.IMREAD_GRAYSCALE)
+            img = distorter.undistort(img)
+   
+            cv2.imshow('current', img/255)
+            cv2.waitKey(1)
+            dso.addActiveFrame(img, i)
+
+            traj = dso.trajectories
+            if len(traj) > 0:
+                plt.plot(traj[..., 0], traj[..., 2])
+                fig.canvas.draw()
+                arr = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+                arr = arr.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                cv2.imshow('xd', arr)
+                cv2.waitKey(1)
+
+            if dso.initFailed:
+                break
+
+        dso.waitForMapping()
+        print('yoyo')
+        print(dso.trajectories.max(axis=0) - dso.trajectories.min(axis=0))
+    gui = threading.Thread(target=func, args=(dso,))
+    gui.start()
+
     gui.join()
 
 
@@ -133,5 +182,6 @@ if __name__ == '__main__':
     #test_builtin_undistort()
     #test_undistort()
     #test_dso_creation()
-    dso_feed(False)
+    #dso_feed(True)
+    dso_builtin_distorter2()
     pass

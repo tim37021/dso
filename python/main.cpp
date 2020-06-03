@@ -5,6 +5,7 @@
 #include "DirectSparseOdometry.h"
 #include "util/MinimalImage.h"
 #include "util/Undistort.h"
+#include "util/settings.h"
 
 
 namespace py = pybind11;
@@ -12,7 +13,6 @@ namespace py = pybind11;
 py::array build_numpy2d(float *arr, int w, int h) {
 
   py::capsule free_when_done(arr, [](void *f) {
-    fprintf(stderr, "%p", f);
     delete[](float *) f;
   });
 
@@ -59,7 +59,9 @@ PYBIND11_MODULE(dso_python, m) {
   dso::setting_maxFrames = 6;
   dso::setting_maxOptIterations = 4;
   dso::setting_minOptIterations = 1;
-  dso::disableAllDisplay = true;
+  dso::setting_debugout_runquiet = true;
+  dso::setting_logStuff = false;
+  //dso::disableAllDisplay = true;
 
   m.doc() = "pybind11 example plugin"; // optional module docstring
 
@@ -70,16 +72,13 @@ PYBIND11_MODULE(dso_python, m) {
       .def("addActiveFrame", &DirectSparseOdometry::addActiveFrame)
       .def("setGammaFunction", &DirectSparseOdometry::setGammaFunction)
       .def("clearGammaFunction", &DirectSparseOdometry::clearGammaFunction)
-    //.def("setCalibration", &DirectSparseOdometry::setCalibration)
+      //.def("setCalibration", &DirectSparseOdometry::setCalibration)
       .def("waitForMapping", &DirectSparseOdometry::waitForMapping)
-      .def("run", [](DirectSparseOdometry &instance) {
-		      py::gil_scoped_release release;
-		      instance.run();
-		      //py::gil_scoped_acquire acquire;
-      })
+      .def("run", &DirectSparseOdometry::run, py::call_guard<py::gil_scoped_release>())
       .def_property_readonly("initFailed", &DirectSparseOdometry::initFailed)
       .def_property_readonly("hasGamma", &DirectSparseOdometry::hasGamma)
-      .def_property_readonly("isLost", &DirectSparseOdometry::isLost);
+      .def_property_readonly("isLost", &DirectSparseOdometry::isLost)
+      .def_property_readonly("trajectories", &DirectSparseOdometry::trajectories);
 
   py::class_<dso::Undistort>(m, "Undistort")
     .def("getUndistorterForFile", &dso::Undistort::getUndistorterForFile)
@@ -95,7 +94,6 @@ PYBIND11_MODULE(dso_python, m) {
     })
     .def("undistort", [] (dso::Undistort &instance, py::array frame) {
       if(frame.dtype().is(py::dtype::of<uint8_t>())) {
-        LOG("Yo");
         // TODO check dimensions
         dso::MinimalImageB img(frame.shape()[1], frame.shape()[0], (unsigned char *)frame.request().ptr);
         // TODO move undistort to header file

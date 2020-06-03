@@ -4,6 +4,8 @@
 #include <pybind11/numpy.h>
 #include <FullSystem/FullSystem.h>
 
+class OutputCapture;
+
 // forward declaration
 namespace dso {
   class FullSystem;
@@ -34,9 +36,12 @@ public:
 
   void setCalibration(pybind11::array K, int w, int h);
 
+  pybind11::array trajectories() const;
+
 private:
   dso::FullSystem *m_fullSystem;
   float *m_gamma = nullptr;
   dso::IOWrap::PangolinDSOViewer *m_viewer;
+  OutputCapture *m_capture;
 
 };
